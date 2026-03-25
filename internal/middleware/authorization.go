@@ -1,4 +1,4 @@
-package main
+package middleware
 
 import (
 	"errors"
@@ -26,5 +26,19 @@ func Authorization(next http.Handler) http.Handler {
 
 		var database *tools.DatabaseInterface
 		database, err = tools.NewDatabase()
+		if err != nil {
+			api.InternalErrorHandler(w)
+			return
+		}
+
+		var loginDetails *tools.LoginDetails
+		loginDetails = (*database).GetUserLoginDetails(username)
+
+		if loginDetails == nil || (token != (*loginDetails).AuthToken) {
+			log.Error(UnAuthorizedError)
+			api.RequestErrorHandler(w, UnAuthorizedError)
+		}
+
+		next.ServeHTTP(w, r)
 	})
 }
